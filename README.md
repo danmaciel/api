@@ -52,7 +52,8 @@ api/
 │   ├── dto/                 # Formatos de dados para entrada/saída
 │   └── middleware/          # Filtros e validações
 ├── config/                  # Configurações e conexão com o banco
-├── docs/                    # Documentação automática (Swagger), collection do postaman para testes e diagramas do projeto(c4 model, sequencia e er)
+├── docs/                    # Documentação automática (Swagger), collection do postaman para testes e 
+                             # diagramas do projeto(c4 model, sequencia e er)
 └── tests/                   # Testes automatizados
 ```
 
