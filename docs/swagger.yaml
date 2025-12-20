@@ -1,0 +1,847 @@
+basePath: /api/v1
+definitions:
+  dto.ClienteResponse:
+    properties:
+      cpf:
+        type: string
+      created_at:
+        type: string
+      email:
+        type: string
+      id:
+        type: integer
+      nome:
+        type: string
+      telefone:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  dto.CountResponse:
+    properties:
+      count:
+        type: integer
+    type: object
+  dto.CreateClienteRequest:
+    properties:
+      cpf:
+        type: string
+      email:
+        type: string
+      nome:
+        maxLength: 100
+        minLength: 3
+        type: string
+      telefone:
+        maxLength: 15
+        minLength: 10
+        type: string
+    required:
+    - cpf
+    - email
+    - nome
+    type: object
+  dto.CreateItemPedidoRequest:
+    properties:
+      produto_id:
+        type: integer
+      quantidade:
+        type: integer
+    required:
+    - produto_id
+    - quantidade
+    type: object
+  dto.CreatePedidoRequest:
+    properties:
+      cliente_id:
+        type: integer
+      itens:
+        items:
+          $ref: '#/definitions/dto.CreateItemPedidoRequest'
+        minItems: 1
+        type: array
+      status:
+        enum:
+        - pendente
+        - pago
+        - enviado
+        - entregue
+        - cancelado
+        type: string
+    required:
+    - cliente_id
+    - itens
+    type: object
+  dto.CreateProdutoRequest:
+    properties:
+      ativo:
+        description: pointer para permitir false explícito
+        type: boolean
+      categoria:
+        maxLength: 100
+        type: string
+      descricao:
+        maxLength: 1000
+        type: string
+      estoque:
+        minimum: 0
+        type: integer
+      nome:
+        maxLength: 200
+        minLength: 3
+        type: string
+      preco:
+        type: number
+      sku:
+        maxLength: 50
+        minLength: 3
+        type: string
+    required:
+    - nome
+    - preco
+    - sku
+    type: object
+  dto.ErrorResponse:
+    properties:
+      error:
+        type: string
+      message:
+        type: string
+    type: object
+  dto.ItemPedidoResponse:
+    properties:
+      id:
+        type: integer
+      preco_unitario:
+        type: number
+      produto:
+        $ref: '#/definitions/dto.ProdutoResponse'
+      produto_id:
+        type: integer
+      quantidade:
+        type: integer
+      subtotal:
+        type: number
+    type: object
+  dto.PedidoResponse:
+    properties:
+      cliente:
+        $ref: '#/definitions/dto.ClienteResponse'
+      cliente_id:
+        type: integer
+      created_at:
+        type: string
+      data_pedido:
+        type: string
+      id:
+        type: integer
+      itens:
+        items:
+          $ref: '#/definitions/dto.ItemPedidoResponse'
+        type: array
+      status:
+        type: string
+      updated_at:
+        type: string
+      valor_total:
+        type: number
+    type: object
+  dto.ProdutoResponse:
+    properties:
+      ativo:
+        type: boolean
+      categoria:
+        type: string
+      created_at:
+        type: string
+      descricao:
+        type: string
+      estoque:
+        type: integer
+      id:
+        type: integer
+      nome:
+        type: string
+      preco:
+        type: number
+      sku:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  dto.UpdateClienteRequest:
+    properties:
+      cpf:
+        type: string
+      email:
+        type: string
+      nome:
+        maxLength: 100
+        minLength: 3
+        type: string
+      telefone:
+        maxLength: 15
+        minLength: 10
+        type: string
+    type: object
+  dto.UpdatePedidoRequest:
+    properties:
+      status:
+        enum:
+        - pendente
+        - pago
+        - enviado
+        - entregue
+        - cancelado
+        type: string
+    required:
+    - status
+    type: object
+  dto.UpdateProdutoRequest:
+    properties:
+      ativo:
+        type: boolean
+      categoria:
+        maxLength: 100
+        type: string
+      descricao:
+        maxLength: 1000
+        type: string
+      estoque:
+        minimum: 0
+        type: integer
+      nome:
+        maxLength: 200
+        minLength: 3
+        type: string
+      preco:
+        type: number
+      sku:
+        maxLength: 50
+        minLength: 3
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact:
+    email: support@exemplo.com
+    name: API Support
+  description: REST API for managing clientes (customers) with CRUD operations
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+  termsOfService: http://swagger.io/terms/
+  title: Cliente API
+  version: "1.0"
+paths:
+  /clientes:
+    get:
+      description: Retrieve all clientes from the database
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/dto.ClienteResponse'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Get all clientes
+      tags:
+      - clientes
+    post:
+      consumes:
+      - application/json
+      description: Create a new cliente with the provided information
+      parameters:
+      - description: Cliente data
+        in: body
+        name: cliente
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CreateClienteRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/dto.ClienteResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Create a new cliente
+      tags:
+      - clientes
+  /clientes/{id}:
+    delete:
+      description: Delete a cliente by ID
+      parameters:
+      - description: Cliente ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Delete cliente
+      tags:
+      - clientes
+    get:
+      description: Retrieve a specific cliente by ID
+      parameters:
+      - description: Cliente ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.ClienteResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Get cliente by ID
+      tags:
+      - clientes
+    put:
+      consumes:
+      - application/json
+      description: Update an existing cliente
+      parameters:
+      - description: Cliente ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Cliente data
+        in: body
+        name: cliente
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UpdateClienteRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.ClienteResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Update cliente
+      tags:
+      - clientes
+  /clientes/count:
+    get:
+      description: Get the total number of clientes
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.CountResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Count clientes
+      tags:
+      - clientes
+  /clientes/nome/{name}:
+    get:
+      description: Retrieve clientes matching the specified name (partial match)
+      parameters:
+      - description: Cliente name
+        in: path
+        name: name
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/dto.ClienteResponse'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Get clientes by name
+      tags:
+      - clientes
+  /pedidos:
+    get:
+      description: Retrieve all pedidos from the database
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/dto.PedidoResponse'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Get all pedidos
+      tags:
+      - pedidos
+    post:
+      consumes:
+      - application/json
+      description: Create a new pedido with the provided information
+      parameters:
+      - description: Pedido data
+        in: body
+        name: pedido
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CreatePedidoRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/dto.PedidoResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Create a new pedido
+      tags:
+      - pedidos
+  /pedidos/{id}:
+    delete:
+      description: Delete a pedido by ID
+      parameters:
+      - description: Pedido ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Delete pedido
+      tags:
+      - pedidos
+    get:
+      description: Retrieve a specific pedido by ID
+      parameters:
+      - description: Pedido ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.PedidoResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Get pedido by ID
+      tags:
+      - pedidos
+    put:
+      consumes:
+      - application/json
+      description: Update the status of an existing pedido
+      parameters:
+      - description: Pedido ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Pedido status update
+        in: body
+        name: pedido
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UpdatePedidoRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.PedidoResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Update pedido status
+      tags:
+      - pedidos
+  /pedidos/cliente/{cliente_id}:
+    get:
+      description: Retrieve all pedidos for a specific cliente
+      parameters:
+      - description: Cliente ID
+        in: path
+        name: cliente_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/dto.PedidoResponse'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Get pedidos by cliente ID
+      tags:
+      - pedidos
+  /pedidos/count:
+    get:
+      description: Get the total number of pedidos
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.CountResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Count pedidos
+      tags:
+      - pedidos
+  /pedidos/status/{status}:
+    get:
+      description: Retrieve pedidos by status (pendente, pago, enviado, entregue,
+        cancelado)
+      parameters:
+      - description: Pedido status
+        in: path
+        name: status
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/dto.PedidoResponse'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Get pedidos by status
+      tags:
+      - pedidos
+  /produtos:
+    get:
+      description: Retrieve all produtos from the database
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/dto.ProdutoResponse'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Get all produtos
+      tags:
+      - produtos
+    post:
+      consumes:
+      - application/json
+      description: Create a new produto with the provided information
+      parameters:
+      - description: Produto data
+        in: body
+        name: produto
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CreateProdutoRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/dto.ProdutoResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Create a new produto
+      tags:
+      - produtos
+  /produtos/{id}:
+    delete:
+      description: Delete a produto by ID
+      parameters:
+      - description: Produto ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Delete produto
+      tags:
+      - produtos
+    get:
+      description: Retrieve a specific produto by ID
+      parameters:
+      - description: Produto ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.ProdutoResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Get produto by ID
+      tags:
+      - produtos
+    put:
+      consumes:
+      - application/json
+      description: Update an existing produto
+      parameters:
+      - description: Produto ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Produto data
+        in: body
+        name: produto
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UpdateProdutoRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.ProdutoResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Update produto
+      tags:
+      - produtos
+  /produtos/categoria/{categoria}:
+    get:
+      description: Retrieve produtos by categoria
+      parameters:
+      - description: Produto categoria
+        in: path
+        name: categoria
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/dto.ProdutoResponse'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Get produtos by categoria
+      tags:
+      - produtos
+  /produtos/count:
+    get:
+      description: Get the total number of produtos
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.CountResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Count produtos
+      tags:
+      - produtos
+  /produtos/nome/{name}:
+    get:
+      description: Retrieve produtos matching the specified name (partial match)
+      parameters:
+      - description: Produto name
+        in: path
+        name: name
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/dto.ProdutoResponse'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Get produtos by name
+      tags:
+      - produtos
+swagger: "2.0"
