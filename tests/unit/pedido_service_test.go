@@ -199,7 +199,7 @@ func TestPedidoService_Create_ProdutoNotFound(t *testing.T) {
 
 	assert.Error(t, err)
 	assert.Nil(t, result)
-	assert.Contains(t, err.Error(), "não encontrado")
+	assert.Contains(t, err.Error(), "produto 999 não encontrado")
 	mockClienteRepo.AssertExpectations(t)
 	mockProdutoRepo.AssertExpectations(t)
 }
