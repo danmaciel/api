@@ -30,6 +30,6 @@ jobs:
       - name: Tests
         env:
           CGO_ENABLED: '1'
-        run: go test -count=1 -coverprofile=coverage.out ./...
+        run: go test -count=1 -coverpkg=./internal/...,./config/... -coverprofile=coverage.out ./tests/...
       - name: Coverage summary
         run: go tool cover -func=coverage.out | tail -n 1

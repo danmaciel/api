@@ -39,7 +39,7 @@ test-integration:
 
 test-coverage:
 	@echo "Running tests with coverage..."
-	go test -coverprofile=coverage.out ./...
+	go test -coverpkg=./internal/...,./config/... -coverprofile=coverage.out ./tests/...
 	go tool cover -html=coverage.out -o coverage.html
 
 swagger:
