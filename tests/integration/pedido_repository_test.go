@@ -32,7 +32,7 @@ func TestPedidoRepository_Create(t *testing.T) {
 	cliente := &model.Cliente{Nome: "Test Cliente", Email: "test@test.com", CPF: "12345678901"}
 	db.Create(cliente)
 
-	produto := &model.Produto{Nome: "Test Produto", SKU: "TEST-001", Preco: 100.00}
+	produto := &model.Produto{Nome: "Test Produto", SKU: "TEST-001", Preco: 100.00, Estoque: 5, Ativo: true}
 	db.Create(produto)
 
 	pedido := &model.Pedido{
