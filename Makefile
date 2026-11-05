@@ -15,7 +15,7 @@ install:
 	@echo "Installing dependencies..."
 	go mod download
 	go mod tidy
-	go install github.com/swaggo/swag/cmd/swag@latest
+	go install github.com/swaggo/swag/cmd/swag@v1.16.6
 
 build:
 	@echo "Building application..."
@@ -49,9 +49,8 @@ swagger:
 clean:
 	@echo "Cleaning..."
 	rm -rf bin/
-	rm -rf docs/
 	rm -f coverage.out coverage.html
-	rm -f database/*.db
+	@echo "Database files are preserved; delete them explicitly if necessary."
 
 docker-build:
 	@echo "Building Docker image..."

@@ -1,6 +1,9 @@
 # API MVC(Golang) - Sistema de Gerenciamento
 
-> Uma API REST moderna em Go para gerenciar clientes, produtos e pedidos com arquitetura MVC
+> **Projeto de estudo e demonstração técnica.** API REST em Go com arquitetura em camadas e testes unitários e de integração com SQLite. O projeto não possui autenticação/autorização e não deve ser exposto publicamente sem controles adicionais.
+>
+> **Validação:** [Go CI](.github/workflows/ci.yml) executa análise estática, compilação e testes. Verifique o GitHub Actions para o resultado mais recente.
+
 
 ## Sobre o projeto?
 
@@ -164,7 +167,7 @@ r.Use(middleware.ContentType)    // 4. Define Content-Type
 
 | Categoria | Padrão | Localização Principal | Vantagem Chave |
 |-----------|--------|----------------------|----------------|
-| Arquitetural | Clean Architecture | `internal/*` | Separação de responsabilidades |
+| Arquitetural | Arquitetura em camadas | `internal/*` | Separação de responsabilidades |
 | Arquitetural | MVC | Controller/Service/Model | Organização clara |
 | Criação | Factory Method | Funções `New*()` | Criação consistente |
 | Estrutural | Repository | `internal/repository/` | Abstração de dados |
@@ -216,14 +219,14 @@ A API usa SQLite (um banco de dados simples em arquivo) com a seguinte estrutura
 ## Como executar o projeto?
 
 ### Pré-requisitos
-- Go 1.21 ou superior instalado
+- Go na versão indicada em `go.mod` (atualmente 1.25.5), com CGO e compilador C habilitados para SQLite
 - Um terminal/console
 
 ### Passos
 
 1️⃣ **Clone o repositório**
 ```bash
-git clone <url-do-repositorio>
+git clone https://github.com/danmaciel/api.git
 cd api
 ```
 
@@ -235,10 +238,10 @@ make install
 
 3️⃣ **Configure as variáveis de ambiente**
 
-Crie um arquivo `.env` na raiz do projeto:
-```env
-SERVER_PORT=8080
-DB_FILE_PATH=./database/api.db
+A aplicação lê variáveis de ambiente do processo; não carrega um arquivo `.env` automaticamente. No terminal, execute:
+```bash
+export SERVER_PORT=8080
+export DB_FILE_PATH=./database/api.db
 ```
 
 4️⃣ **Execute a aplicação**
@@ -378,7 +381,7 @@ make clean             # Limpar arquivos de build
 - **CORS habilitado**: Pode ser acessada de qualquer frontend
 - **Logs completos**: Todas as requisições são registradas
 - **Graceful Shutdown**: Encerra conexões de forma limpa
-- **Testes automatizados**: Garantem que tudo funciona
+- **Testes automatizados**: Verificam cenários cobertos pelas suites existentes
 
 ## Endpoints Disponíveis
 
@@ -391,30 +394,38 @@ make clean             # Limpar arquivos de build
 - `PUT /api/v1/clientes/{id}` - Atualizar
 - `DELETE /api/v1/clientes/{id}` - Deletar
 
-### Produtos (8 endpoints)
+### Produtos
 - `POST /api/v1/produtos` - Criar produto
 - `GET /api/v1/produtos` - Listar todos
 - `GET /api/v1/produtos/{id}` - Buscar por ID
 - `GET /api/v1/produtos/categoria/{cat}` - Buscar por categoria
 - `GET /api/v1/produtos/count` - Contar total
-- `PATCH /api/v1/produtos/{id}/estoque` - Atualizar estoque
 - `PUT /api/v1/produtos/{id}` - Atualizar
 - `DELETE /api/v1/produtos/{id}` - Deletar
 
-### Pedidos (12 endpoints)
+### Pedidos
 - `POST /api/v1/pedidos` - Criar pedido
 - `GET /api/v1/pedidos` - Listar todos
 - `GET /api/v1/pedidos/{id}` - Buscar por ID
 - `GET /api/v1/pedidos/cliente/{id}` - Pedidos de um cliente
 - `GET /api/v1/pedidos/status/{status}` - Filtrar por status
-- `PATCH /api/v1/pedidos/{id}/status` - Atualizar status
+- `PUT /api/v1/pedidos/{id}` - Atualizar status
 - `DELETE /api/v1/pedidos/{id}` - Cancelar pedido
-- E mais...
 
 ### Utilitários
 - `GET /health` - Verificar se a API está funcionando
 - `GET /swagger/*` - Documentação interativa
 
+
+
+## Decisões técnicas e limitações conhecidas
+
+- **Separação em camadas:** controllers tratam HTTP, services concentram as operações e repositories isolam a persistência.
+- **SQLite/GORM:** banco simples para estudo; AutoMigrate não substitui migrações versionadas em sistemas de produção.
+- **Estoque e concorrência:** a verificação de disponibilidade antes de salvar pedidos não constitui reserva/baixa atômica. É necessário implementar transações e testes concorrentes antes do uso em vendas reais.
+- **Segurança:** não há autenticação/autorização e a política de CORS é permissiva; não expor a aplicação diretamente na internet.
+- **Operação:** o repositório não demonstra deploy de produção, métricas ou tracing distribuído.
+- **Testes:** a suite contempla sqlite em memória e httptest. O resultado efetivo deve ser consultado no GitHub Actions.
 
 ## Autor
 
