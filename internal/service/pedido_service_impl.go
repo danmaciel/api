@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"errors"
+	"strconv"
 	"time"
 
 	"github.com/danmaciel/api/internal/dto"
@@ -48,7 +49,7 @@ func (s *pedidoServiceImpl) Create(ctx context.Context, req *dto.CreatePedidoReq
 		// Buscar produto
 		produto, err := s.produtoRepo.FindByID(ctx, itemReq.ProdutoID)
 		if err != nil {
-			return nil, errors.New("produto " + string(rune(itemReq.ProdutoID)) + " não encontrado")
+			return nil, errors.New("produto " + strconv.FormatUint(uint64(itemReq.ProdutoID), 10) + " não encontrado")
 		}
 
 		// Verificar estoque
