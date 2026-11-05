@@ -25,7 +25,7 @@ Imagine que você precisa criar um sistema para uma loja online. Esse sistema pr
 
 ### Processar Pedidos
 - Criar pedidos associando clientes e produtos
-- Validar estoque automaticamente
+- Validar e baixar o estoque transacionalmente durante a criação do pedido (sem estorno automático no cancelamento)
 - Calcular valor total do pedido
 - Acompanhar status (pendente → confirmado → enviado → entregue)
 - Cancelar pedidos quando necessário
@@ -422,7 +422,7 @@ make clean             # Limpar arquivos de build
 
 - **Separação em camadas:** controllers tratam HTTP, services concentram as operações e repositories isolam a persistência.
 - **SQLite/GORM:** banco simples para estudo; AutoMigrate não substitui migrações versionadas em sistemas de produção.
-- **Estoque e concorrência:** a verificação de disponibilidade antes de salvar pedidos não constitui reserva/baixa atômica. É necessário implementar transações e testes concorrentes antes do uso em vendas reais.
+- **Estoque e concorrência:** a criação de pedidos realiza baixa condicional de estoque e grava o pedido na mesma transação de banco, com testes de rollback e concorrência em SQLite com conexões serializadas. A API ainda não devolve estoque automaticamente em cancelamentos ou exclusões; também faltam testes de carga e de múltiplas conexões/processos. Consulte [ADR 0001](docs/adr/0001-consistencia-estoque.md).
 - **Segurança:** não há autenticação/autorização e a política de CORS é permissiva; não expor a aplicação diretamente na internet.
 - **Operação:** o repositório não demonstra deploy de produção, métricas ou tracing distribuído.
 - **Testes:** a suite contempla sqlite em memória e httptest. O resultado efetivo deve ser consultado no GitHub Actions.
