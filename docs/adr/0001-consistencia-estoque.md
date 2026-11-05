@@ -1,20 +1,20 @@
 # ADR 0001 — Consistência de estoque ao criar pedidos
 
-- **Status:** proposta (não implementada)
+- **Status:** parcialmente implementada — criação de pedidos com baixa transacional; cancelamento/estorno pendente
 - **Contexto:** API de demonstração em Go/GORM/SQLite
 - **Escopo:** criação de pedido e disponibilidade de produtos
 
 ## Problema
 
-Atualmente a camada de serviço lê o estoque e valida as quantidades antes de persistir o pedido. Não há reserva/baixa atômica de estoque. Duas solicitações simultâneas podem validar a mesma disponibilidade e criar pedidos sem uma garantia de consistência. Também não há regra de reposição na exclusão/cancelamento.
+A implementação original lia o estoque antes de persistir o pedido, sem baixa transacional. Esta etapa adiciona uma atualização condicional de estoque e a inserção do pedido na mesma transação de banco, executadas no repositório. Ainda não há reposição automática de estoque para cancelamentos ou exclusões.
 
-## Decisão proposta (não aplicada)
+## Decisão e implementação por etapas
 
-1. Definir a semântica de negócio: ao criar pedido pendente, o estoque é reservado, vendido ou permanece disponível? Estabelecer política explícita para cancelamento, expiração e estorno.
-2. Criar uma operação transacional coesa que combine a validação do cliente, agregação de quantidades por produto, verificação de ativação, baixa/reserva condicional e gravação do pedido e seus itens.
-3. Realizar cada atualização de estoque por comando condicional dentro da mesma transação, por exemplo, `UPDATE produtos SET estoque = estoque - ? WHERE id = ? AND ativo = true AND estoque >= ?`, verificando `RowsAffected == 1`.
-4. Se uma atualização falhar, reverter toda a transação e retornar erro de domínio que diferencie indisponibilidade de estoque, produto inexistente e conflito temporário.
-5. Testar cenários com itens duplicados no mesmo pedido, falha na persistência após baixa, cancelamento, limite exato do estoque e duas requisições concorrentes.
+1. **Implementado nesta etapa:** ao criar um pedido (inclusive pendente), as quantidades são imediatamente baixadas do estoque. Não há reservas com expiração.
+2. **Implementado parcialmente:** o serviço valida o cliente e os itens; o repositório agrega quantidades por produto e executa baixa condicional e gravação do pedido e itens dentro de uma transação.
+3. **Implementado:** realizar cada atualização de estoque por comando condicional dentro da mesma transação, por exemplo, `UPDATE produtos SET estoque = estoque - ? WHERE id = ? AND ativo = true AND estoque >= ?`, verificando `RowsAffected == 1`.
+4. **Implementado parcialmente:** erro de atualização condicional reverte a transação. Diferenciação refinada de erros de domínio e respostas HTTP específicas ainda pendentes.
+5. **Coberto nesta etapa:** itens duplicados, falha ao persistir pedido, estoque insuficiente e duas operações concorrentes em SQLite com conexões serializadas. **Pendente:** estorno no cancelamento, bloqueios entre múltiplas conexões e testes de carga.
 
 ## SQLite versus PostgreSQL
 
@@ -34,4 +34,4 @@ SQLite é adequado para estudo e execução local, mas tem particularidades de e
 - Comportamento de cancelamento e reembolso documentado e testado.
 - Teste de concorrência automatizado usando banco compartilhado, sem depender apenas de mocks.
 
-> Este documento descreve uma decisão arquitetural em estudo; não afirma que as garantias acima já estejam implementadas.
+> A baixa transacional é implementada apenas na criação do pedido. Atualização de status e exclusão ainda não devolvem unidades ao estoque; não utilizar esse fluxo como checkout completo antes de definir e testar cancelamentos.
