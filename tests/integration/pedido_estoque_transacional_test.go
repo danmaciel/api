@@ -25,3 +25,45 @@ func TestAtomicOrderDeductsStock(t *testing.T) {
  require.NoError(t, db.First(product,product.ID).Error)
  require.Equal(t, 1, product.Estoque)
 }
+
+func TestAtomicOrderRollbackWhenStockInsufficient(t *testing.T) {
+ db, err := gorm.Open(sqlite.Open(filepath.Join(t.TempDir(), "rollback.db")), &gorm.Config{})
+ require.NoError(t, err)
+ require.NoError(t, db.AutoMigrate(&model.Cliente{}, &model.Produto{}, &model.Pedido{}, &model.PedidoProduto{}))
+ customer := &model.Cliente{Nome:"Cliente Teste", Email:"rollback@example.com", CPF:"12345678902"}
+ require.NoError(t, db.Create(customer).Error)
+ first := &model.Produto{Nome:"Produto Primeiro",SKU:"ROLLBACK-1",Preco:15,Estoque:5,Ativo:true}
+ second := &model.Produto{Nome:"Produto Segundo",SKU:"ROLLBACK-2",Preco:15,Estoque:1,Ativo:true}
+ require.NoError(t,db.Create(first).Error)
+ require.NoError(t,db.Create(second).Error)
+ order := &model.Pedido{ClienteID:customer.ID,Status:"pendente",ValorTotal:75,Itens:[]model.PedidoProduto{
+  {ProdutoID:first.ID,Quantidade:3,PrecoUnitario:15},
+  {ProdutoID:second.ID,Quantidade:2,PrecoUnitario:15},
+ }}
+ err = repository.NewPedidoRepositorySQLite(db).Create(context.Background(), order)
+ require.ErrorContains(t,err,"estoque indisponível")
+ var updated model.Produto
+ require.NoError(t,db.First(&updated,first.ID).Error)
+ require.Equal(t,5,updated.Estoque)
+ var count int64
+ require.NoError(t,db.Model(&model.Pedido{}).Count(&count).Error)
+ require.Zero(t,count)
+}
+
+func TestAtomicOrderDuplicateItemsCountTogether(t *testing.T) {
+ db, err := gorm.Open(sqlite.Open(filepath.Join(t.TempDir(), "duplicates.db")), &gorm.Config{})
+ require.NoError(t, err)
+ require.NoError(t, db.AutoMigrate(&model.Cliente{}, &model.Produto{}, &model.Pedido{}, &model.PedidoProduto{}))
+ customer := &model.Cliente{Nome:"Cliente Teste",Email:"duplicates@example.com",CPF:"12345678903"}
+ require.NoError(t, db.Create(customer).Error)
+ product := &model.Produto{Nome:"Produto Duplicado",SKU:"DUPLICATE-1",Preco:10,Estoque:5,Ativo:true}
+ require.NoError(t,db.Create(product).Error)
+ order := &model.Pedido{ClienteID:customer.ID,Status:"pendente",ValorTotal:60,Itens:[]model.PedidoProduto{
+  {ProdutoID:product.ID,Quantidade:3,PrecoUnitario:10},
+  {ProdutoID:product.ID,Quantidade:3,PrecoUnitario:10},
+ }}
+ err = repository.NewPedidoRepositorySQLite(db).Create(context.Background(),order)
+ require.ErrorContains(t,err,"estoque indisponível")
+ require.NoError(t,db.First(product,product.ID).Error)
+ require.Equal(t,5,product.Estoque)
+}
