@@ -101,3 +101,19 @@ func TestConcurrentOrdersDoNotOversell(t *testing.T) {
  require.NoError(t,db.First(product,product.ID).Error)
  require.Equal(t,1,product.Estoque)
 }
+
+func TestAtomicOrderRollbackOnInsertError(t *testing.T) {
+ db,err:=gorm.Open(sqlite.Open(filepath.Join(t.TempDir(),"insert_failure.db")),&gorm.Config{})
+ require.NoError(t,err)
+ require.NoError(t,db.AutoMigrate(&model.Cliente{},&model.Produto{},&model.Pedido{},&model.PedidoProduto{}))
+ customer:=&model.Cliente{Nome:"Cliente Teste",Email:"insert@example.com",CPF:"12345678905"}
+ require.NoError(t,db.Create(customer).Error)
+ product:=&model.Produto{Nome:"Produto Teste",SKU:"INSERT-1",Preco:20,Estoque:5,Ativo:true}
+ require.NoError(t,db.Create(product).Error)
+ require.NoError(t,db.Exec("CREATE TRIGGER reject_order BEFORE INSERT ON pedidos BEGIN SELECT RAISE(ABORT, 'forced insert failure'); END").Error)
+ order:=&model.Pedido{ClienteID:customer.ID,Status:"pendente",ValorTotal:40,Itens:[]model.PedidoProduto{{ProdutoID:product.ID,Quantidade:2,PrecoUnitario:20}}}
+ err=repository.NewPedidoRepositorySQLite(db).Create(context.Background(),order)
+ require.Error(t,err)
+ require.NoError(t,db.First(product,product.ID).Error)
+ require.Equal(t,5,product.Estoque)
+}
