@@ -1,15 +1,15 @@
-# API MVC(Golang) - Sistema de Gerenciamento
+# API REST em Go — clientes, produtos e pedidos
 
 > **Projeto de estudo e demonstração técnica.** API REST em Go com arquitetura em camadas e testes unitários e de integração com SQLite. O projeto não possui autenticação/autorização e não deve ser exposto publicamente sem controles adicionais.
 >
 > **Validação:** [Go CI](.github/workflows/ci.yml) executa análise estática, compilação e testes. Verifique o GitHub Actions para o resultado mais recente.
 
 
-## Sobre o projeto?
+## Visão geral
 
-Imagine que você precisa criar um sistema para uma loja online. Esse sistema precisa cadastrar clientes, gerenciar produtos e processar pedidos. É exatamente isso que esta API faz!
+API REST de demonstração para um domínio simplificado de comércio, com operações de clientes, produtos e pedidos. O foco está na separação entre handlers HTTP, regras de negócio e persistência, com testes e diagramas de arquitetura. Não se trata de um serviço implantado em produção.
 
-## O que você consegue fazer com esta API?
+## Casos de uso implementados
 
 ### Gerenciar Clientes
 - Cadastrar novos clientes com nome, email, CPF e telefone
@@ -32,7 +32,7 @@ Imagine que você precisa criar um sistema para uma loja online. Esse sistema pr
 
 ## Como o projeto está organizado?
 
-A API segue uma arquitetura em camadas bem definida:
+A API organiza responsabilidades em camadas. Os diagramas abaixo representam a estrutura documentada do projeto:
 
 ![Diagrama de Contexto](docs/diagramas/1-diagrama_C4_Contexto.png)
 
@@ -48,9 +48,9 @@ A API segue uma arquitetura em camadas bem definida:
 api/
 ├── cmd/api/                 # Ponto de entrada da aplicação
 ├── internal/
-│   ├── controller/          # Recebe as requisições HTTP (a porta de entrada)
-│   ├── service/             # Processa a lógica de negócio (o cérebro)
-│   ├── repository/          # Conversa com o banco de dados (o arquivo)
+│   ├── controller/          # Handlers e contratos HTTP
+│   ├── service/             # Regras de negócio e orquestração
+│   ├── repository/          # Acesso à persistência
 │   ├── model/               # Define as entidades (Cliente, Produto, Pedido)
 │   ├── dto/                 # Formatos de dados para entrada/saída
 │   └── middleware/          # Filtros e validações
@@ -65,14 +65,14 @@ api/
 
 ## Padrões de Design (Design Patterns)
 
-Este projeto implementa diversos padrões de design reconhecidos pela indústria, tornando o código mais organizado, testável e manutenível.
+O projeto utiliza separação em camadas, interfaces e composição de dependências. Os nomes de padrões abaixo ajudam a analisar essas escolhas, mas não implicam que toda construção `New*` seja uma implementação canônica de um padrão GoF.
 
 ### Padrões Arquiteturais
 
 **Arquitetura em Camadas**
 - **Onde**: Estrutura completa do `internal/`
 - **Por quê**: Separa responsabilidades em camadas (Controller → Service → Repository → Model)
-- **Benefício**: Mudanças em uma camada não afetam as outras
+- **Benefício**: Ajuda a limitar o acoplamento; mudanças nos contratos ainda podem afetar outras camadas
 
 **MVC (Model-View-Controller)**
 - **Onde**: `internal/controller/` (Controllers), `internal/model/` (Models), `internal/dto/` (Views/DTOs)
@@ -81,13 +81,13 @@ Este projeto implementa diversos padrões de design reconhecidos pela indústria
 
 ### Padrões de Criação
 
-**Factory Method Pattern**
+**Funções construtoras e composição (não necessariamente Factory Method GoF)**
 - **Onde**: Funções `New*` como `NewClienteController()`, `NewClienteService()`, `NewClienteRepositorySQLite()`
   - `internal/controller/cliente_controller.go:17-21`
   - `internal/service/cliente_service_impl.go:20-26`
   - `internal/repository/cliente_repository_sqlite.go:15-18`
 - **Por quê**: Centraliza a criação de objetos complexos
-- **Benefício**: Garante que objetos sejam criados corretamente com todas as dependências
+- **Benefício**: Centraliza a montagem e explicita dependências exigidas
 
 ### Padrões Estruturais
 
@@ -96,16 +96,16 @@ Este projeto implementa diversos padrões de design reconhecidos pela indústria
   - Interfaces: `cliente_repository.go`, `produto_repository.go`, `pedido_repository.go`
   - Implementações: `*_repository_sqlite.go`
 - **Por quê**: Abstrai o acesso aos dados, isolando a lógica de persistência
-- **Benefício**: Fácil trocar SQLite por PostgreSQL/MySQL sem alterar Services
+- **Benefício**: Permite trocar o adapter de persistência sem mudar as interfaces de serviço, desde que o contrato e as semânticas do banco sejam preservados
 
 **Adapter Pattern**
 - **Onde**: Implementações de Repository (ex: `clienteRepositorySQLite`)
 - **Por quê**: Adapta a interface genérica do repositório para o GORM
 - **Benefício**: Desacopla a aplicação de detalhes de implementação do banco
 
-**Facade Pattern**
+**Composição centralizada de rotas**
 - **Onde**: `internal/controller/router.go:SetupRouter()`
-- **Por quê**: Simplifica a configuração complexa de rotas, middlewares e CORS
+- **Por quê**: Mantém configuração de rotas e middlewares em um local identificável
 - **Benefício**: Ponto único de configuração do servidor HTTP
 
 **Decorator Pattern (Middleware)**
@@ -116,7 +116,7 @@ Este projeto implementa diversos padrões de design reconhecidos pela indústria
 
 ### Padrões Comportamentais
 
-**Dependency Injection (DI)**
+**Injeção de dependências por construtor**
 - **Onde**: `cmd/api/main.go:44-61`
 - **Por quê**: Injeta dependências via construtor em vez de criá-las internamente
 - **Benefício**: Código altamente testável e com baixo acoplamento
@@ -127,9 +127,9 @@ clienteService := service.NewClienteService(clienteRepo)
 clienteController := controller.NewClienteController(clienteService)
 ```
 
-**Strategy Pattern**
+**Interfaces de serviço e substituição de implementações**
 - **Onde**: Interfaces de Service (`ClienteService`, `ProdutoService`, `PedidoService`)
-- **Por quê**: Define contratos de negócio que podem ter múltiplas implementações
+- **Por quê**: Define contratos que permitem trocar implementações e usar doubles de teste
 - **Benefício**: Fácil criar implementações alternativas (ex: mock para testes)
 
 **Chain of Responsibility**
@@ -143,7 +143,7 @@ r.Use(middleware.Recovery)       // 3. Recupera de panics
 r.Use(middleware.ContentType)    // 4. Define Content-Type
 ```
 
-**Mapper/Transformer Pattern**
+**Mapeamento entre entidades e DTOs**
 - **Onde**: Métodos `toResponse()` nos Services
   - `internal/service/cliente_service_impl.go:143-154`
   - `internal/service/pedido_service_impl.go:197-253`
@@ -176,19 +176,19 @@ r.Use(middleware.ContentType)    // 4. Define Content-Type
 | Comportamental | Strategy | Interfaces de Service | Flexibilidade |
 | Dados | DTO | `internal/dto/` | Controle de API |
 
-## Como funciona na prática?
+## Fluxos documentados
 
 ### Exemplo: Criar um Pedido
 
-Quando você cria um pedido, a API faz todo este processo automaticamente:
+A criação de um pedido percorre validações, persistência e atualização de estoque na transação descrita no ADR:
 
 ![Fluxo de Criação de Pedido](docs/diagramas/6-diagrama_de_sequencia_criar_pedido.png)
 
-1. **Você envia**: Cliente ID + lista de produtos e quantidades
-2. **API valida**: O cliente existe? Os produtos existem? Tem estoque suficiente?
-3. **API calcula**: Valor total do pedido (quantidade × preço)
-4. **API salva**: Pedido no banco de dados com todos os detalhes
-5. **Você recebe**: Confirmação com número do pedido e total a pagar
+1. **Entrada:** cliente e itens (produtos e quantidades)
+2. **Validação:** existência de cliente, produtos e estoque disponível
+3. **Cálculo:** total a partir das quantidades e preços
+4. **Persistência:** transação para pedido, itens e baixa de estoque
+5. **Resposta:** identificador e valores do pedido
 
 ### Outros Fluxos
 
@@ -216,7 +216,7 @@ A API usa SQLite (um banco de dados simples em arquivo) com a seguinte estrutura
 - Um **Pedido** pode ter vários **Produtos** (e vice-versa)
 - Cada item do pedido guarda o preço no momento da compra (histórico)
 
-## Como executar o projeto?
+## Execução local
 
 ### Pré-requisitos
 - Go na versão indicada em `go.mod` (atualmente 1.25.5), com CGO e compilador C habilitados para SQLite
@@ -224,19 +224,19 @@ A API usa SQLite (um banco de dados simples em arquivo) com a seguinte estrutura
 
 ### Passos
 
-1️⃣ **Clone o repositório**
+**1. Clonar o repositório**
 ```bash
 git clone https://github.com/danmaciel/api.git
 cd api
 ```
 
-2️⃣ **Instale as dependências**
+**2. Instalar dependências**
 ```bash
 make install
 # Ou: go mod download
 ```
 
-3️⃣ **Configure as variáveis de ambiente**
+**3. Configurar ambiente**
 
 A aplicação lê variáveis de ambiente do processo; não carrega um arquivo `.env` automaticamente. No terminal, execute:
 ```bash
@@ -244,13 +244,13 @@ export SERVER_PORT=8080
 export DB_FILE_PATH=./database/api.db
 ```
 
-4️⃣ **Execute a aplicação**
+**4. Executar a API**
 ```bash
 make run
 # Ou: go run cmd/api/main.go
 ```
 
-Pronto! A API estará rodando em `http://localhost:8080`
+O servidor estará disponível em `http://localhost:8080` quando iniciar corretamente.
 
 ## Documentação Interativa
 
@@ -258,11 +258,7 @@ Depois de iniciar a aplicação, acesse:
 
 **http://localhost:8080/swagger/index.html**
 
-Lá você encontra:
-- Todos os endpoints disponíveis
-- Como usar cada um deles
-- Exemplos de requisições e respostas
-- Possibilidade de testar diretamente pelo navegador
+A página descreve os endpoints documentados e permite experimentar requisições em ambiente local.
 
 ## Exemplos de Uso
 
@@ -364,10 +360,10 @@ make clean             # Limpar arquivos de build
 
 | Tecnologia | Para que serve? |
 |------------|-----------------|
-| **Go** | Linguagem de programação rápida e eficiente |
+| **Go** | Implementação da aplicação HTTP |
 | **Chi Router** | Roteamento HTTP leve e flexível |
 | **GORM** | Facilita operações com banco de dados |
-| **SQLite** | Banco de dados simples em arquivo |
+| **SQLite** | Banco de dados local para demonstração e testes |
 | **Swagger** | Documentação interativa da API |
 | **Validator** | Validação automática de dados |
 | **Testify** | Framework de testes |
@@ -378,8 +374,8 @@ make clean             # Limpar arquivos de build
 - **Soft Delete**: Registros "deletados" ficam marcados, não são removidos
 - **Relacionamentos**: Pedidos conectam clientes e produtos automaticamente
 - **Status HTTP corretos**: 200 OK, 201 Created, 404 Not Found, etc.
-- **CORS habilitado**: Pode ser acessada de qualquer frontend
-- **Logs completos**: Todas as requisições são registradas
+- **CORS permissivo**: configuração de demonstração; não representa política de acesso segura
+- **Logging HTTP**: middleware de logging para as requisições cobertas
 - **Graceful Shutdown**: Encerra conexões de forma limpa
 - **Testes automatizados**: Verificam cenários cobertos pelas suites existentes
 
@@ -429,10 +425,10 @@ make clean             # Limpar arquivos de build
 
 ## Autor
 
-**Danilo Maciel(dan maciel)**
+**Danilo Maciel**
 
 ---
 
 **Versão:** 1.0.0
 **Data:** 17/12/2025
-**Projeto Acadêmico** - API REST em Go com padrão MVC
+**Escopo:** laboratório de arquitetura em camadas, API REST e testes; sem autenticação ou implantação de produção.
