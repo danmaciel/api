@@ -55,7 +55,7 @@ api/
 │   ├── dto/                 # Formatos de dados para entrada/saída
 │   └── middleware/          # Filtros e validações
 ├── config/                  # Configurações e conexão com o banco
-├── docs/                    # Documentação automática (Swagger), collection do postaman para testes e 
+├── docs/                    # Documentação automática (Swagger), collection do Postman para testes e 
                              # diagramas do projeto(c4 model, sequencia e er)
 └── tests/                   # Testes automatizados
 ```
@@ -104,7 +104,7 @@ O projeto utiliza separação em camadas, interfaces e composição de dependên
 - **Benefício**: Desacopla a aplicação de detalhes de implementação do banco
 
 **Composição centralizada de rotas**
-- **Onde**: `internal/controller/router.go:SetupRouter()`
+- **Onde**: `internal/controller/router.go` (`SetupRouter`)
 - **Por quê**: Mantém configuração de rotas e middlewares em um local identificável
 - **Benefício**: Ponto único de configuração do servidor HTTP
 
@@ -163,18 +163,18 @@ r.Use(middleware.ContentType)    // 4. Define Content-Type
 - **Por quê**: Executa lógica antes de salvar (ex: calcular subtotal)
 - **Benefício**: Lógica de domínio próxima ao modelo
 
-### Resumo dos Padrões
+### Resumo das decisões de organização
 
-| Categoria | Padrão | Localização Principal | Vantagem Chave |
-|-----------|--------|----------------------|----------------|
-| Arquitetural | Arquitetura em camadas | `internal/*` | Separação de responsabilidades |
-| Arquitetural | MVC | Controller/Service/Model | Organização clara |
-| Criação | Factory Method | Funções `New*()` | Criação consistente |
-| Estrutural | Repository | `internal/repository/` | Abstração de dados |
-| Estrutural | Decorator | `internal/middleware/` | Funcionalidades modulares |
-| Comportamental | Dependency Injection | `main.go` | Testabilidade |
-| Comportamental | Strategy | Interfaces de Service | Flexibilidade |
-| Dados | DTO | `internal/dto/` | Controle de API |
+| Prática | Onde aparece | Benefício e limite |
+| --- | --- | --- |
+| Arquitetura em camadas | `internal/controller`, `service`, `repository` | Separa responsabilidades; não elimina todo o acoplamento |
+| Repository | `internal/repository/` | Encapsula detalhes de persistência atrás de contratos |
+| Construtores e composição | Funções `New*()` e `cmd/api/main.go` | Monta dependências explicitamente; **não implica Factory Method GoF** |
+| Injeção de dependências | Composição em `cmd/api/main.go` | Facilita substituições em testes |
+| Middleware HTTP | `internal/middleware/` | Compõe tratamentos transversais na cadeia HTTP |
+| DTOs | `internal/dto/` | Define contratos de entrada e saída independentes dos modelos de persistência |
+
+Interfaces de serviço possibilitam substituir implementações, mas **não comprovam por si só o padrão Strategy**. Da mesma forma, a separação de controllers, services e modelos aqui é mais bem descrita como **arquitetura em camadas para API REST** do que como uma implementação canônica de MVC com uma camada de views.
 
 ## Fluxos documentados
 
